@@ -102,7 +102,7 @@ if __name__ == "__main__":
   waypoints.append(center)
   for cnt in range(300):
       period=100
-      sizex=5
+      sizex=2
       sizey=5
       t = cnt / period * 2 * np.pi
       x = np.sqrt(2) * np.cos(t) / (1 + np.sin(t) ** 2)
@@ -112,7 +112,7 @@ if __name__ == "__main__":
       # z = np.ones_like(x) * 1.5
       waypoint = airsim.Vector3r(x, y, 8.27) 
       waypoints.append(waypoint) 
-  client.moveOnPathAsync(waypoints, 5, 60 ,airsim.DrivetrainType.MaxDegreeOfFreedom, airsim.YawMode(False,0), 1, 1, vehicle_name = lead)
+  client.moveOnPathAsync(waypoints, 3, 60 ,airsim.DrivetrainType.MaxDegreeOfFreedom, airsim.YawMode(False,0), 1, 1, vehicle_name = lead)
 
 
 

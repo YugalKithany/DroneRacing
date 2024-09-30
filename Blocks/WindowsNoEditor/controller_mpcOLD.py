@@ -1,36 +1,51 @@
 import numpy as np
-class PIDController:
-    def __init__(self, gain_x, gain_y, gain_z, setpoint=[0,0,0]):
-        self.Kp_x = gain_x[0]
-        self.Ki_x = gain_x[1]
-        self.Kd_x = gain_x[2]
+import scipy.optimize as opt
 
-        self.Kp_y = gain_y[0]
-        self.Ki_y = gain_y[1]
-        self.Kd_y = gain_y[2]
+class MPCController:
+    def __init__(self, dt, N, Q, R):
+        self.dt = dt  # Time step
+        self.N = N  # Prediction horizon
+        self.Q = Q  # State cost matrix
+        self.R = R  # Input cost matrix
 
-        self.Kp_z = gain_z[0]
-        self.Ki_z = gain_z[1]
-        self.Kd_z = gain_z[2]
+    def moveMPC(self, current_pos, current_vel, target_pos):
+        # Define system matrices
+        A = np.array([[1, self.dt, 0],
+                      [0, 1, self.dt],
+                      [0, 0, 1]])
+        B = np.array([[0.5*self.dt**2],
+                      [self.dt],
+                      [1]])
 
-        self.Kp = np.array([self.Kp_x, self.Kp_y, self.Kp_z])
-        self.Ki = np.array([self.Ki_x, self.Ki_y, self.Ki_z])
-        self.Kd = np.array([self.Kd_x, self.Kd_y, self.Kd_z])
+        # Initialize state and input vectors
+        x = np.array([current_pos[0], current_vel[0], 0])  # Assuming initial acceleration is 0
+        u = np.zeros((self.N, 1))
 
-        self.setpoint = setpoint
-        self.prev_error = 0
-        self.integral = 0
+        # Define cost function and constraints
+        def cost_function(u):
+            x_pred = np.zeros((3, self.N+1))
+            x_pred[:, 0] = x
+            for k in range(self.N):
+                x_pred[:, k+1] = A @ x_pred[:, k] + B @ u[k]
+            cost = np.sum(np.diag(x_pred - target_pos) @ self.Q) + np.sum(u.T @ self.R @ u)
+            return cost
 
-    def update(self, current_value, dt):
-        error = self.setpoint - current_value
-        self.integral += error * dt
-        derivative = (error - self.prev_error) / dt
-        output = self.Kp * error + self.Ki * self.integral + self.Kd * derivative
-        self.prev_error = error
-        return output
-    
-    def update_setpoint(self, setpoint):
-        self.setpoint = setpoint
+        def constraint_fun(u):
+            x_pred = np.zeros((3, self.N+1))
+            x_pred[:, 0] = x
+            for k in range(self.N):
+                x_pred[:, k+1] = A @ x_pred[:, k] + B @ u[k]
+            return x_pred[:, -1] - target_pos
+
+        constraints = {'type': 'eq', 'fun': constraint_fun}
+
+
+        # Solve the optimization problem
+        res = opt.minimize(cost_function, u.flatten(), constraints=constraints)
+        u_opt = res.x
+
+        # Apply the first control input
+        return u_opt[0]
 
 
 import airsim
@@ -49,21 +64,6 @@ import random
 
 from pyvista_visualiser import Perception_simulation
 import matplotlib.animation as animation
-
-
-
-# def calculate_performance_metrics(position_history, settlingpoint, tolerance_percentage=2):
-#     pos_adj = position_history - position_history[0]
-#     peak = np.max(pos_adj)
-#     Mp = 100* (peak - settlingpoint) / settlingpoint   # Overshoot as percentage
-#     # Find time index where percent difference between current pos and settling point is less than predetermined tolerance 
-#     Ts_idx = np.where(np.abs(pos_adj - settlingpoint) <= tolerance_percentage / 100 * settlingpoint)[0][0]
-#     settling_time = Ts_idx * timestep  # Using Predefined tiemstep
-#     #Rise time
-#     Tr_idx = np.where(pos_adj >= 0.9 * settlingpoint)[0]
-#     rise_time = Tr_idx[0] * timestep  
-#     return Mp, settling_time, rise_time
-
 
 
 def calculate_performance_metrics(position_history, settlingpoint, tolerance_percentage=2, timestep=None):
