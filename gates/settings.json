@@ -1,0 +1,22 @@
+{
+	"SeeDocsAt": "https://github.com/Microsoft/AirSim/blob/main/docs/settings.md",
+	"SettingsVersion": 1.2,
+	"SimMode": "Multirotor",
+	"ViewMode": "Manual",
+	"Recording": {
+		"Cameras": [
+			{
+				"CameraName": "Camera_main",
+				"ImageType": 0,
+				"PixelsAsFloat": false,
+				"VehicleName": "Drone_L",
+				"Compress": true
+			}
+		]
+	},
+	"Vehicles": { 
+		"Drone_L": {
+			"VehicleType": "SimpleFlight"
+		}
+	}
+}
