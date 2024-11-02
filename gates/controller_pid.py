@@ -14,22 +14,49 @@ class PIDController:
         self.prev_error = np.zeros(3)
         self.integral = np.zeros(3)
         self.output_limit = output_limit
+        
+        # Add deadband to reduce oscillations near target
+        self.deadband = 0.3
+        # Add separate limits for position-based gain reduction
+        self.position_threshold = 2.0
 
     def update(self, current_value, dt):
         error = self.setpoint - current_value
+        error_magnitude = np.linalg.norm(error)
+        
+        # Apply deadband to reduce small oscillations
+        error = np.where(np.abs(error) < self.deadband, 0, error)
+        
+        # Reduce gains when close to target to prevent overshooting
+        if error_magnitude < self.position_threshold:
+            position_scale = error_magnitude / self.position_threshold
+            current_p = self.Kp * position_scale
+            current_d = self.Kd * position_scale
+        else:
+            current_p = self.Kp
+            current_d = self.Kd
+            
         self.integral += error * dt
-
-        # Cap the intagral term to stop extreme control signals
-        integral_limit = 10
+        
+        # More aggressive integral windup prevention
+        integral_limit = 5  # Reduced from 10
         self.integral = np.clip(self.integral, -integral_limit, integral_limit)
+        
         derivative = (error - self.prev_error) / max(dt, 0.01)
-        output = self.Kp * error + self.Ki * self.integral + self.Kd * derivative
+        
+        # Calculate control signal with scaled gains
+        output = current_p * error + self.Ki * self.integral + current_d * derivative
+        
+        # More conservative output limiting
         output = np.clip(output, -self.output_limit, self.output_limit)
+        
         self.prev_error = error
         return output
 
     def update_setpoint(self, setpoint):
         self.setpoint = np.array(setpoint)
+        # Reset integral term when changing setpoints to prevent accumulation
+        self.integral = np.zeros(3)
 
 
 

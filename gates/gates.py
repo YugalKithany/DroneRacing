@@ -11,17 +11,34 @@ import math
 # Waypoints for drone navigation waypoints_qualifier1.yaml from rovery script TODO-Remake this, ensure it is center of gate
 WAYPOINTS = [
     [10.388, 80.774, -43.580], [18.110, 76.260, -43.580], [25.434, 66.287, -43.580],
-    [30.066, 56.550, -43.580], [31.301, 45.631, -43.880], [26.503, 38.200, -43.380],
-    [3.264, 37.569, -43.580], [-16.863, 45.418, -46.580], [-15.494, 63.187, -52.080],
-    [-6.321, 78.212, -55.780], [5.144, 82.385, -55.780], [14.559, 84.432, -55.180],
-    [23.859, 82.832, -32.080], [38.259, 78.132, -31.380], [51.059, 52.132, -25.880],
-    [44.959, 38.932, -25.880], [25.959, 26.332, -19.880], [11.659, 26.332, -12.780],
-    [-10.141, 22.632, -6.380], [-24.641, 9.132, 2.120]
+    [30.066, 56.550, -43.580], [32.301, 45.931, -43.880], [26.503, 38.200, -43.380],
+    [3.264, 37.569, -43.580], [-17.863, 45.418, -46.580], [-15.494, 63.187, -52.080],
+    [-6.321, 78.212, -55.780], [5.144, 82.385, -55.780]
 ]
+
+# WAYPOINTS = [
+#     [10.388, 80.774, -43.580], [18.110, 76.260, -43.580], [25.434, 66.287, -43.580],
+#     [30.066, 56.550, -43.580], [32.301, 45.931, -43.880], [26.503, 38.200, -43.380],
+#     [3.264, 37.569, -43.580], [-17.863, 45.418, -46.580], [-15.494, 63.187, -52.080],
+#     [-6.321, 78.212, -55.780], [5.144, 82.385, -55.780], [14.559, 84.432, -55.180],
+#     [22.859, 82.832, -32.080], [38.259, 78.132, -31.380], [51.059, 52.132, -25.880],
+#     [44.959, 38.932, -25.880], [25.959, 26.332, -19.880], [11.659, 26.332, -12.780],
+#     [-10.141, 22.632, -6.380], [-24.641, 9.132, 2.120]
+# ]
+
+
+# WAYPOINTS = [
+#     [12.559, 82.432, -55.180],
+#     [22.859, 82.832, -32.080], [38.259, 78.132, -31.380], [51.059, 52.132, -25.880],
+#     [44.959, 38.932, -25.880], [25.959, 26.332, -19.880], [11.659, 26.332, -12.780],
+#     [-10.141, 22.632, -6.380], [-24.641, 9.132, 2.120]
+# ]
+
+
 # 			"X":10.388,
 # 			"Y": 80.774,
 # 			"Z": -43.580,
-
+# 4 cooked, 5 left too much, 
 class simulation():
     def __init__(self, totalcount=50):
         self.lead = "Drone_L"
@@ -67,9 +84,9 @@ client.confirmConnection()
 client.enableApiControl(True)
 client.armDisarm(True)
 # PID controller setup
-gain_x = [5, 0, 10.0]
-gain_y = [5, 0, 10.0]
-gain_z = [1, 0, 5.0]
+gain_x = [3, 0, 8.0]  # Reduced from [5, 0, 10.0]
+gain_y = [3, 0, 8.0]  # Reduced from [5, 0, 10.0]
+gain_z = [1, 0, 5.0]  # Keep the same
 pid = PIDController(gain_x=gain_x, gain_y=gain_y, gain_z=gain_z)
 
 def move_by_waypoints():
@@ -105,32 +122,58 @@ def calculate_yaw_angle(current_pos, target_pos):
     return yaw_deg
 
 
+
+
 def state_based_pid_control():
-    for wp in WAYPOINTS:
-    # wp = WAYPOINTS[1]
+    for i, wp in enumerate(WAYPOINTS):
         print(f"Target waypoint: {wp}")
         current_pos = client.getMultirotorState().kinematics_estimated.position
-        # current_pos = np.array([chase_kinematics.position.x_val, chase_kinematics.position.y_val])
         pid.update_setpoint(wp)
+        
+        # Store the final approach velocity
+        final_approach_velocity = [0, 0, 0]
+        
+        # First phase: Approach the gate
         while not np.allclose([current_pos.x_val, current_pos.y_val, current_pos.z_val], wp, atol=1.5):
-            # Current and target coordinates
             current_coords = np.array([current_pos.x_val, current_pos.y_val, current_pos.z_val])
-            target_coords = np.array(wp)
-            print(f"Current position: {current_coords}")
-            print(f"Target position: {target_coords}")
-            control_signal = pid.update(current_coords,  dt=1)
-            control_signal[0] = np.clip(control_signal[0], -5, 10)
-            control_signal[1] = np.clip(control_signal[1], -5, 10)
-            control_signal[2] = np.clip(control_signal[2], -5, 10)
-            print(f"Control signal - X: {control_signal[0]}, Y: {control_signal[1]}, Z: {control_signal[2]}")
-            yaw_angle = calculate_yaw_angle(current_coords, target_coords)
-            client.moveByVelocityAsync(control_signal[0]/5, control_signal[1]/5, control_signal[2]/5, .5, airsim.DrivetrainType.MaxDegreeOfFreedom, airsim.YawMode(False,yaw_angle)).join()
-            # client.moveByVelocityAsync(control_signal[0]/5, control_signal[1]/5, control_signal[2]/10, 1)
-            current_pos = client.getMultirotorState().kinematics_estimated.position
+            control_signal = pid.update(current_coords, dt=1)
+            control_signal = np.clip(control_signal, -5, 5)
             
-            print(f"Same: {wp}")
-        time.sleep(1)
-        print("FINISHEDDDD YAYAYAYAYYA")
+            # Calculate yaw but maintain it while approaching gate
+            yaw_angle = calculate_yaw_angle(current_coords, wp)
+            client.moveByVelocityAsync(
+                control_signal[0]/2, 
+                control_signal[1]/2, 
+                control_signal[2]/5, 
+                0.5,
+                airsim.DrivetrainType.MaxDegreeOfFreedom,
+                airsim.YawMode(False, yaw_angle)
+            ).join()
+            
+            # Store the current velocity for gate clearance
+            final_approach_velocity = [control_signal[0]/5, control_signal[1]/5, control_signal[2]/5]
+            current_pos = client.getMultirotorState().kinematics_estimated.position
+
+        # Second phase: Clear the gate using the final approach velocity
+        if i < len(WAYPOINTS) - 1:  # Don't do this for the last waypoint
+            print("Clearing gate...")
+            
+            # Continue with the same velocity for about 1 second (adjust as needed)
+            clearance_time = 1.0  # seconds
+            start_time = time.time()
+            
+            while time.time() - start_time < clearance_time:
+                client.moveByVelocityAsync(
+                    final_approach_velocity[0],
+                    final_approach_velocity[1],
+                    final_approach_velocity[2],
+                    0.1,  # Short duration for smooth movement
+                    airsim.DrivetrainType.MaxDegreeOfFreedom,
+                    airsim.YawMode(False, yaw_angle)
+                ).join()
+                
+    print("Completed all waypoints")
+
 
 # 			"X":10.388,
 # 			"Y": 80.774,
