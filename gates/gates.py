@@ -14,15 +14,17 @@ from datetime import datetime
 # Waypoints for drone navigation waypoints_qualifier1.yaml from rovery script TODO-Remake this, ensure it is center of gate
 WAYPOINTS = [
     [10.388, 80.774, -43.580], [18.110, 76.260, -43.580], [25.434, 66.287, -43.580],
-    [30.066, 56.550, -43.580], [32.301, 45.931, -43.880], [26.503, 38.200, -43.380],
+    [30.066, 56.550, -43.580], [32.801, 45.931, -43.580], [30.503, 38.200, -43.580],
     [3.264, 37.569, -43.580], [-17.863, 45.418, -46.580], [-15.494, 63.187, -52.080],
-    [-6.321, 78.212, -55.780], [5.144, 82.385, -55.780]
-    # [14.559, 84.432, -55.180],
-    # [22.859, 82.832, -32.080], [38.259, 78.132, -31.380], [51.059, 52.132, -25.880],
-    # [44.959, 38.932, -25.880], [25.959, 26.332, -17.880], [11.659, 26.332, -13.780],
-    # [-10.141, 22.632, -6.380], [-23.641, 10.132, 2.120]
+    [-6.321, 78.212, -55.780], [ 5.144, 82.385, -55.780], [14.559, 84.432, -55.180],
+    [22.859, 82.832, -32.080], [38.259, 78.132, -31.380], [51.059, 52.132, -25.880],
+    [44.959, 38.932, -25.880], [25.959, 26.332, -17.880], [11.659, 26.332, -13.780],
+    [-10.141, 22.632, -6.380], [-23.641, 10.132, 2.120]
 ]
 
+WAYPOINTS_ANGLES = [
+    -15, -45, -60, -90 ,-115, 0, 0,  -45,  -90 , -135, -180, -180, -30, -45, -60, -135, -180, -180, -195, -25 ]
+    
 # WAYPOINTS = [
 #     [-6.321, 78.212, -55.780], [5.144, 82.385, -55.780], [14.559, 84.432, -55.180],
 #     [22.859, 82.832, -32.080], [38.259, 78.132, -31.380], [51.059, 52.132, -25.880],
@@ -125,14 +127,15 @@ def state_based_pid_control(pidC):
     global drone_path
     drone_path = []
     gate_clearance_positions = []  # Store positions where gates were cleared
-    
+    collision_count = 0
+    run_start_time = time.time()
     for i, wp in enumerate(WAYPOINTS):
         print(f"Target waypoint: {wp}")
         current_pos = client.getMultirotorState().kinematics_estimated.position
         pidC.update_setpoint(wp)
         
         final_approach_velocity = [0, 0, 0]
-        
+        stuck_timestamp = time.time()
         while not np.allclose([current_pos.x_val, current_pos.y_val, current_pos.z_val], wp, atol=1.5):
             current_coords = np.array([current_pos.x_val, current_pos.y_val, current_pos.z_val])
             drone_path.append([current_pos.x_val, current_pos.y_val, current_pos.z_val])
@@ -150,8 +153,22 @@ def state_based_pid_control(pidC):
                 airsim.YawMode(False, yaw_angle)
             ).join()
             
+            collision_info = client.simGetCollisionInfo()
+            if collision_info.has_collided:
+                collision_count += 1 
+
             final_approach_velocity = [control_signal[0]/5, control_signal[1]/5, control_signal[2]/5]
             current_pos = client.getMultirotorState().kinematics_estimated.position
+            start_time = time.time()
+            if(start_time - stuck_timestamp > 30 ):
+                client.simSetVehiclePose(airsim.Pose(airsim.Vector3r(wp[0], wp[1], wp[2]), airsim.to_quaternion(0, 0, 0)), True)
+                print("fixing stuck")
+
+            print("TIME:" , start_time - run_start_time)
+            if(start_time - run_start_time > 240): 
+                client.simSetVehiclePose(airsim.Pose(airsim.Vector3r(6.788, 81.6774, -43.380), 
+                                    airsim.to_quaternion(0, 0, 0)), True)
+                return np.array(gate_clearance_positions), collision_count, start_time - run_start_time
 
         if i < len(WAYPOINTS) - 1:
             print("Clearing gate...")
@@ -159,9 +176,15 @@ def state_based_pid_control(pidC):
             current_pos = client.getMultirotorState().kinematics_estimated.position
             gate_clearance_positions.append([current_pos.x_val, current_pos.y_val, current_pos.z_val])
             
-            clearance_time = 1.0
+            clearance_time = 1
+            if(i == 12 ): clearance_time =4
             start_time = time.time()
-            
+            # print("TIME:" , start_time - run_start_time)
+            if(start_time - run_start_time > 240): 
+                client.simSetVehiclePose(airsim.Pose(airsim.Vector3r(6.788, 81.6774, -43.380), 
+                                    airsim.to_quaternion(0, 0, 0)), True)
+                return np.array(gate_clearance_positions), collision_count, start_time - run_start_time
+
             while time.time() - start_time < clearance_time:
                 current_pos = client.getMultirotorState().kinematics_estimated.position
                 drone_path.append([current_pos.x_val, current_pos.y_val, current_pos.z_val])
@@ -174,16 +197,23 @@ def state_based_pid_control(pidC):
                     airsim.DrivetrainType.MaxDegreeOfFreedom,
                     airsim.YawMode(False, yaw_angle)
                 ).join()
-                
+
+                collision_info = client.simGetCollisionInfo()
+                if collision_info.has_collided:
+                    collision_count += 1
+
+    end_time = time.time()
+    total_runtime = end_time - run_start_time
     print("Completed all waypoints")
-    return np.array(gate_clearance_positions)
+    return np.array(gate_clearance_positions), collision_count, total_runtime
 
 def plot_gate_errors(gate_positions, waypoints):
     gate_positions = np.array(gate_positions)
     waypoints = np.array(waypoints[:-1])  # Exclude last waypoint as it's not a gate
     
     # Calculate errors
-    errors = np.sqrt(np.sum((gate_positions - waypoints)**2, axis=1))
+    min_rows = min(gate_positions.shape[0], waypoints.shape[0])
+    errors = np.sqrt(np.sum((gate_positions[:min_rows] - waypoints[:min_rows])**2, axis=1))
     percent_errors = (errors / np.sqrt(np.sum(waypoints**2, axis=1))) * 100
     
     # Create error plot
@@ -442,7 +472,7 @@ def main():
     print("State-Based PID Control")
     gate_clearance_positions = state_based_pid_control()
     plot_3d_path(drone_path, WAYPOINTS)
-    plot_gate_errors(gate_clearance_positions, WAYPOINTS)
+    # plot_gate_errors(gate_clearance_positions, WAYPOINTS)
 
     # # Vision-based approach
     # print("Vision-Based Navigation")
@@ -455,38 +485,139 @@ def main():
 
 
 
-def plot_combined_gate_errors(all_gate_positions, gain_configurations, waypoints):
-    """Plot gate errors for all PID gains on the same graph"""
-    plt.figure(figsize=(12, 8))
+# def plot_combined_gate_errors(all_gate_positions, gain_configurations, waypoints):
+#     """Plot gate errors for all PID gains on the same graph"""
+#     plt.figure(figsize=(12, 8))
     
-    for i, gate_positions in enumerate(all_gate_positions):
-        gate_positions = np.array(gate_positions)
-        waypoints_arr = np.array(waypoints[:-1])  # Exclude last waypoint
+#     for i, gate_positions in enumerate(all_gate_positions):
+#         gate_positions = np.array(gate_positions)
+#         waypoints_arr = np.array(waypoints[:-1])  # Exclude last waypoint
         
-        # Calculate errors
-        errors = np.sqrt(np.sum((gate_positions - waypoints_arr)**2, axis=1))
-        percent_errors = (errors / np.sqrt(np.sum(waypoints_arr**2, axis=1))) * 100
+#         # Calculate errors
+#         min_rows = min(gate_positions.shape[0], waypoints_arr.shape[0])
+#         errors = np.sqrt(np.sum((gate_positions[:min_rows] - waypoints_arr[:min_rows])**2, axis=1))
+#         percent_errors = (errors / np.sqrt(np.sum(waypoints_arr**2, axis=1))) * 100
         
-        # Create label from gain configuration
-        gains = gain_configurations[i]
-        label = f"Kp={gains['gain_x'][0]}, Ki={gains['gain_x'][1]}, Kd={gains['gain_x'][2]}"
+#         # Create label from gain configuration
+#         gains = gain_configurations[i]
+#         label = f"Kp={gains['gain_x'][0]}, Ki={gains['gain_x'][1]}, Kd={gains['gain_x'][2]}"
         
-        plt.plot(range(len(percent_errors)), percent_errors, '-o', linewidth=2, label=label)
+#         plt.plot(range(len(percent_errors)), percent_errors, '-o', linewidth=2, label=label)
     
-    plt.xlabel('Gate Number')
-    plt.ylabel('Percent Error (%)')
-    plt.title('Gate Clearance Error vs Gate Number - Gain Comparison')
-    plt.legend()
-    plt.grid(True)
-    plt.savefig('combined_gate_errors.png')
-    plt.show()
+#     plt.xlabel('Gate Number')
+#     plt.ylabel('Percent Error (%)')
+#     plt.title('Gate Clearance Error vs Gate Number - Gain Comparison')
+#     plt.legend()
+#     plt.grid(True)
+#     plt.savefig('combined_gate_errors.png')
+#     plt.show()
 
-def plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurations, waypoints):
-    """Plot all 3D paths on the same graph"""
+# def plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurations, waypoints):
+#     """Plot all 3D paths on the same graph"""
+#     fig = go.Figure()
+    
+#     # Different colors for different gain configurations
+#     # colors = ['blue', 'red', 'green', 'yellow', 'orange', 'pink', 'purple']  # Add more colors if needed
+#     colors = [
+#     'blue', 'red', 'green', 'yellow', 'orange', 'pink', 'purple', 
+#     'brown', 'black', 'white', 'gray', 'cyan', 'magenta', 'violet', 
+#     'indigo', 'beige', 'salmon', 'turquoise', 'teal', 'lime', 'peach', 
+#     'lavender', 'gold', 'silver', 'bronze', 'emerald', 'crimson', 'navy', 
+#     'charcoal', 'mint', 'coral', 'fuchsia', 'amber', 'plum', 'chartreuse', 
+#     'ivory', 'ruby', 'sapphire', 'topaz', 'tan', 'maroon', 'khaki', 'azure', 
+#     'apricot', 'pearl', 'lavenderblush', 'orchid', 'periwinkle', 'rosy', 
+#     'sepia', 'mauve', 'sage', 'lemon', 'honeydew', 'cobalt', 'magenta', 
+#     'snow']
+#     # Plot drone paths for each configuration
+#     for i, drone_path in enumerate(all_drone_paths):
+#         drone_path = np.array(drone_path)
+#         gains = gain_configurations[i]
+#         label = f"Kp={gains['gain_x'][0]}, Ki={gains['gain_x'][1]}, Kd={gains['gain_x'][2]}"
+        
+#         fig.add_trace(go.Scatter3d(
+#             x=drone_path[:, 0],
+#             y=drone_path[:, 1],
+#             z=-drone_path[:, 2],
+#             mode='lines',
+#             name=label,
+#             line=dict(color=colors[i%50], width=3)
+#         ))
+    
+#     # Plot waypoints
+#     waypoints = np.array(waypoints)
+#     fig.add_trace(go.Scatter3d(
+#         x=waypoints[:, 0],
+#         y=waypoints[:, 1],
+#         z=-waypoints[:, 2],
+#         mode='markers',
+#         name='Waypoints',
+#         marker=dict(color='black', size=5)
+#     ))
+    
+#     # Add gates around waypoints
+#     gate_width_x = 2
+#     gate_width_y = 5
+#     gate_height = 5
+    
+#     for wp in waypoints:
+#         x = [wp[0] - gate_width_x/2, wp[0] + gate_width_x/2]
+#         y = [wp[1] - gate_width_y/2, wp[1] + gate_width_y/2]
+#         z = [-wp[2] - gate_height/2, -wp[2] + gate_height/2]
+        
+#         for i in range(2):
+#             for j in range(2):
+#                 fig.add_trace(go.Scatter3d(
+#                     x=[x[i], x[i]], y=[y[j], y[j]], z=[z[0], z[1]],
+#                     mode='lines',
+#                     line=dict(color='gray', width=2),
+#                     showlegend=False
+#                 ))
+#                 for k in range(2):
+#                     fig.add_trace(go.Scatter3d(
+#                         x=[x[0], x[1]], y=[y[i], y[i]], z=[z[k], z[k]],
+#                         mode='lines',
+#                         line=dict(color='gray', width=2),
+#                         showlegend=False
+#                     ))
+#                     fig.add_trace(go.Scatter3d(
+#                         x=[x[j], x[j]], y=[y[0], y[1]], z=[z[k], z[k]],
+#                         mode='lines',
+#                         line=dict(color='gray', width=2),
+#                         showlegend=False
+#                     ))
+    
+#     fig.update_layout(
+#         scene=dict(
+#             xaxis_title='X',
+#             yaxis_title='Y',
+#             zaxis_title='Z',
+#             aspectmode='data'
+#         ),
+#         title="3D Drone Paths Comparison - Multiple PID Gains"
+#     )
+    
+#     fig.write_html("combined_3d_paths.html")
+#     fig.show()
+
+
+
+
+def plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurations, waypoints, waypoints_angles):
+    """Plot all 3D paths on the same graph, with gates tilted based on waypoints_angles."""
     fig = go.Figure()
     
-    # Different colors for different gain configurations
-    colors = ['blue', 'red', 'green']  # Add more colors if needed
+    # Colors for different gain configurations
+    colors = [
+        'blue', 'red', 'green', 'yellow', 'orange', 'pink', 'purple', 
+        'brown', 'black', 'white', 'gray', 'cyan', 'magenta', 'violet', 
+        'indigo', 'beige', 'salmon', 'turquoise', 'teal', 'lime', 'peach', 
+        'lavender', 'gold', 'silver', 'bronze', 'emerald', 'crimson', 'navy', 
+        'charcoal', 'mint', 'coral', 'fuchsia', 'amber', 'plum', 'chartreuse', 
+        'ivory', 'ruby', 'sapphire', 'topaz', 'tan', 'maroon', 'khaki', 'azure', 
+        'apricot', 'pearl', 'lavenderblush', 'orchid', 'periwinkle', 'rosy', 
+        'sepia', 'mauve', 'sage', 'lemon', 'honeydew', 'cobalt', 'magenta', 
+        'snow'
+    ]
     
     # Plot drone paths for each configuration
     for i, drone_path in enumerate(all_drone_paths):
@@ -500,7 +631,7 @@ def plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurati
             z=-drone_path[:, 2],
             mode='lines',
             name=label,
-            line=dict(color=colors[i], width=3)
+            line=dict(color=colors[i % len(colors)], width=3)
         ))
     
     # Plot waypoints
@@ -514,37 +645,53 @@ def plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurati
         marker=dict(color='black', size=5)
     ))
     
-    # Add gates around waypoints
+    # Parameters for gates
     gate_width_x = 2
     gate_width_y = 5
     gate_height = 5
     
-    for wp in waypoints:
-        x = [wp[0] - gate_width_x/2, wp[0] + gate_width_x/2]
-        y = [wp[1] - gate_width_y/2, wp[1] + gate_width_y/2]
-        z = [-wp[2] - gate_height/2, -wp[2] + gate_height/2]
+    # Add gates around waypoints
+    for wp, angle in zip(waypoints, waypoints_angles):
+        theta = np.deg2rad(angle)  # Convert angle to radians
         
-        for i in range(2):
-            for j in range(2):
-                fig.add_trace(go.Scatter3d(
-                    x=[x[i], x[i]], y=[y[j], y[j]], z=[z[0], z[1]],
-                    mode='lines',
-                    line=dict(color='gray', width=2),
-                    showlegend=False
-                ))
-                for k in range(2):
-                    fig.add_trace(go.Scatter3d(
-                        x=[x[0], x[1]], y=[y[i], y[i]], z=[z[k], z[k]],
-                        mode='lines',
-                        line=dict(color='gray', width=2),
-                        showlegend=False
-                    ))
-                    fig.add_trace(go.Scatter3d(
-                        x=[x[j], x[j]], y=[y[0], y[1]], z=[z[k], z[k]],
-                        mode='lines',
-                        line=dict(color='gray', width=2),
-                        showlegend=False
-                    ))
+        # Rotation matrix for Z-axis rotation
+        rotation_matrix = np.array([
+            [np.cos(theta), -np.sin(theta), 0],
+            [np.sin(theta),  np.cos(theta), 0],
+            [0, 0, 1]
+        ])
+        
+        # Define gate corners
+        corners = np.array([
+            [-gate_width_x/2, -gate_width_y/2, -gate_height/2],
+            [ gate_width_x/2, -gate_width_y/2, -gate_height/2],
+            [-gate_width_x/2,  gate_width_y/2, -gate_height/2],
+            [ gate_width_x/2,  gate_width_y/2, -gate_height/2],
+            [-gate_width_x/2, -gate_width_y/2,  gate_height/2],
+            [ gate_width_x/2, -gate_width_y/2,  gate_height/2],
+            [-gate_width_x/2,  gate_width_y/2,  gate_height/2],
+            [ gate_width_x/2,  gate_width_y/2,  gate_height/2]
+        ])
+        
+        # Rotate and translate corners
+        rotated_corners = (rotation_matrix @ corners.T).T + wp
+        
+        # Define lines between rotated corners
+        line_indices = [
+            (0, 1), (0, 2), (1, 3), (2, 3),  # Bottom face
+            (4, 5), (4, 6), (5, 7), (6, 7),  # Top face
+            (0, 4), (1, 5), (2, 6), (3, 7)   # Side edges
+        ]
+        
+        for start, end in line_indices:
+            fig.add_trace(go.Scatter3d(
+                x=[rotated_corners[start, 0], rotated_corners[end, 0]],
+                y=[rotated_corners[start, 1], rotated_corners[end, 1]],
+                z=[-rotated_corners[start, 2], -rotated_corners[end, 2]],  # Flip Z axis
+                mode='lines',
+                line=dict(color='gray', width=2),
+                showlegend=False
+            ))
     
     fig.update_layout(
         scene=dict(
@@ -553,11 +700,14 @@ def plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurati
             zaxis_title='Z',
             aspectmode='data'
         ),
-        title="3D Drone Paths Comparison - Multiple PID Gains"
+        title="3D Drone Paths Comparison - Multiple PID Gains with Tilted Gates"
     )
     
-    fig.write_html("combined_3d_paths.html")
+    fig.write_html("combined_3d_paths_with_tilted_gates.html")
     fig.show()
+
+
+
 
 
 if __name__ == "__main__":
@@ -567,31 +717,33 @@ if __name__ == "__main__":
             'gain_x': [5, 0, 8.0],
             'gain_y': [5, 0, 8.0],
             'gain_z': [6, 0, 5.0]
+        },
+        {
+            'gain_x': [3, 0, 8.5],
+            'gain_y': [3, 0, 8.5],
+            'gain_z': [6, 0, 5.0]
+        },
+        {
+            'gain_x': [3, 0, 7.5],
+            'gain_y': [3, 0, 7.5],
+            'gain_z': [6, 0, 5.0]
+        },
+        {
+            'gain_x': [7, 0, 9],
+            'gain_y': [7, 0, 9],
+            'gain_z': [3, 0, 5.0]
+        },
+        {
+            'gain_x': [2, 0, 5.5],
+            'gain_y': [2, 0, 5.5],
+            'gain_z': [6, 0, 5.0]
         }
-        # {
-        #     'gain_x': [3, 0, 8.5],
-        #     'gain_y': [3, 0, 8.5],
-        #     'gain_z': [6, 0, 5.0]
-        # }
-        # {
-        #     'gain_x': [3, 0, 7.5],
-        #     'gain_y': [3, 0, 7.5],
-        #     'gain_z': [6, 0, 5.0]
-        # },
-        # {
-        #     'gain_x': [7, 0, 9],
-        #     'gain_y': [7, 0, 9],
-        #     'gain_z': [3, 0, 5.0]
-        # },
-        # {
-        #     'gain_x': [2, 0, 5.5],
-        #     'gain_y': [2, 0, 5.5],
-        #     'gain_z': [6, 0, 5.0]
-        # }
     ]
     
     all_gate_positions = []
     all_drone_paths = []
+    collision_counts = [] 
+    runtimes = []  
     target_x=6.788
     target_y=81.6774
     target_z =-43.380
@@ -600,9 +752,11 @@ if __name__ == "__main__":
         print(f"\nTesting gains: {gains}")
         
         # Reset drone position
-        time.sleep(3)
         client.simSetVehiclePose(airsim.Pose(airsim.Vector3r(target_x, target_y, target_z), 
                                             airsim.to_quaternion(0, 0, 0)), True)
+
+
+        time.sleep(3)
         client.takeoffAsync(5).join()
         
         # Initialize PID controller with current gains
@@ -611,10 +765,12 @@ if __name__ == "__main__":
                           gain_z=gains['gain_z'])
         
         # Run controller and store results
-        gate_positions = state_based_pid_control(pidC)
+        gate_positions, collision_count, total_runtime  = state_based_pid_control(pidC)
+        # if(collision_count != -1):
         all_gate_positions.append(gate_positions)
         all_drone_paths.append(drone_path.copy())  # Make sure to copy the drone_path
-        
+        collision_counts.append(collision_count)
+        runtimes.append(total_runtime)
         # Land and reset
         client.landAsync().join()
         client.armDisarm(True)
@@ -622,8 +778,112 @@ if __name__ == "__main__":
         time.sleep(5)  # Wait between runs
     
     # Plot combined results
-    plot_combined_gate_errors(all_gate_positions, gain_configurations, WAYPOINTS)
-    plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurations, WAYPOINTS)
+    # plot_combined_gate_errors(all_gate_positions, gain_configurations, WAYPOINTS)
+    plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurations, WAYPOINTS, WAYPOINTS_ANGLES)
+
+    # Convert the gain configurations to strings for the x-axis
+    gain_strings_x = [str(gains['gain_x']) for gains in gain_configurations]
+    gain_strings_y = [str(gains['gain_y']) for gains in gain_configurations]
+    gain_strings_z = [str(gains['gain_z']) for gains in gain_configurations]
+    
+    # Plot Collision Count vs Gain Values (strings)
+    fig, axes = plt.subplots(1, 2, figsize=(18, 6))
+    
+    # Plot for gain_x vs collision count
+    axes[0].scatter(gain_strings_x, collision_counts, label="Collision count vs gain_x", marker='o')
+    axes[0].set_xlabel('gain_x')
+    axes[0].set_ylabel('Collision Count')
+    axes[0].set_title('Collision Count vs gain_x')
+    axes[0].grid(True)
+    axes[0].tick_params(axis='x', rotation=45)  # Rotate x labels for better readability
+
+    # Plot for gain_y vs collision count
+    axes[1].scatter(gain_strings_y, collision_counts, label="Collision count vs gain_y", marker='o')
+    axes[1].set_xlabel('gain_y')
+    axes[1].set_ylabel('Collision Count')
+    axes[1].set_title('Collision Count vs gain_y')
+    axes[1].grid(True)
+    axes[1].tick_params(axis='x', rotation=45)  # Rotate x labels for better readability
+
+    # Plot for gain_z vs collision count
+    # axes[2].plot(gain_strings_z, collision_counts, label="Collision count vs gain_z", marker='o')
+    # axes[2].set_xlabel('gain_z')
+    # axes[2].set_ylabel('Collision Count')
+    # axes[2].set_title('Collision Count vs gain_z')
+    # axes[2].grid(True)
+    # axes[2].tick_params(axis='x', rotation=45)  # Rotate x labels for better readability
+
+    plt.tight_layout()
+    plt.show()
+
+    # Plot Runtime vs Gain Values (strings)
+    fig, axes = plt.subplots(1, 2, figsize=(18, 6))
+    
+    # Plot for gain_x vs runtime
+    axes[0].plot(gain_strings_x, runtimes, label="Runtime vs gain_x", marker='o')
+    axes[0].set_xlabel('gain_x')
+    axes[0].set_ylabel('Total Runtime (seconds)')
+    axes[0].set_title('Runtime vs gain_x')
+    axes[0].grid(True)
+    axes[0].tick_params(axis='x', rotation=45)  # Rotate x labels for better readability
+
+    # Plot for gain_y vs runtime
+    axes[1].plot(gain_strings_y, runtimes, label="Runtime vs gain_y", marker='o')
+    axes[1].set_xlabel('gain_y')
+    axes[1].set_ylabel('Total Runtime (seconds)')
+    axes[1].set_title('Runtime vs gain_y')
+    axes[1].grid(True)
+    axes[1].tick_params(axis='x', rotation=45)  # Rotate x labels for better readability
+
+    # Plot for gain_z vs runtime
+    # axes[2].plot(gain_strings_z, runtimes, label="Runtime vs gain_z", marker='o')
+    # axes[2].set_xlabel('gain_z')
+    # axes[2].set_ylabel('Total Runtime (seconds)')
+    # axes[2].set_title('Runtime vs gain_z')
+    # axes[2].grid(True)
+    # axes[2].tick_params(axis='x', rotation=45)  # Rotate x labels for better readability
+
+    plt.tight_layout()
+    plt.show()
+
+    # Access gain components from dictionaries
+    gain_x_P = [config["gain_x"][0] for config in gain_configurations]  # P component of gain_x
+    gain_x_D = [config["gain_x"][2] for config in gain_configurations]  # D component of gain_x
+    gain_y_P = [config["gain_y"][0] for config in gain_configurations]  # P component of gain_y
+    gain_y_D = [config["gain_y"][2] for config in gain_configurations]  # D component of gain_y
+
+    # Create scatter plots
+    fig, axs = plt.subplots(2, 2, figsize=(10, 8))
+    fig.suptitle("Runtime vs PID Gain Components")
+
+    # Plot runtime vs gain_x_P
+    axs[0, 0].scatter(gain_x_P, runtimes, color="b")
+    axs[0, 0].set_xlabel("gain_x_P")
+    axs[0, 0].set_ylabel("Runtime")
+    axs[0, 0].set_title("Runtime vs gain_x_P")
+
+    # Plot runtime vs gain_x_D
+    axs[0, 1].scatter(gain_x_D, runtimes, color="g")
+    axs[0, 1].set_xlabel("gain_x_D")
+    axs[0, 1].set_ylabel("Runtime")
+    axs[0, 1].set_title("Runtime vs gain_x_D")
+
+    # Plot runtime vs gain_y_P
+    axs[1, 0].scatter(gain_y_P, runtimes, color="r")
+    axs[1, 0].set_xlabel("gain_y_P")
+    axs[1, 0].set_ylabel("Runtime")
+    axs[1, 0].set_title("Runtime vs gain_y_P")
+
+    # Plot runtime vs gain_y_D
+    axs[1, 1].scatter(gain_y_D, runtimes, color="purple")
+    axs[1, 1].set_xlabel("gain_y_D")
+    axs[1, 1].set_ylabel("Runtime")
+    axs[1, 1].set_title("Runtime vs gain_y_D")
+
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plt.show()
+
+
 
 
 
