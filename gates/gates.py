@@ -12,7 +12,7 @@ import json
 from datetime import datetime
 
 # Waypoints for drone navigation waypoints_qualifier1.yaml from rovery script TODO-Remake this, ensure it is center of gate
-WAYPOINTS = [
+WAYPOINTS_Qualifier1 = [
     [10.388, 80.774, -43.580], [18.110, 76.260, -43.580], [25.434, 66.287, -43.580],
     [30.066, 56.550, -43.580], [32.801, 45.931, -43.580], [30.503, 38.200, -43.580],
     [3.264, 37.569, -43.580], [-17.863, 45.418, -46.580], [-15.494, 63.187, -52.080],
@@ -22,9 +22,20 @@ WAYPOINTS = [
     [-10.141, 22.632, -6.380], [-23.641, 10.132, 2.120]
 ]
 
-WAYPOINTS_ANGLES = [
+WAYPOINTS_ANGLES_Qualifier1 = [
     -15, -45, -60, -90 ,-115, 0, 0,  -45,  -90 , -135, -180, -180, -30, -45, -60, -135, -180, -180, -195, -25 ]
-    
+
+
+WAYPOINTS = [[0.0, 2.0, 2.0199999809265137], [1.5999999046325684, 10.800000190734863, 2.0199999809265137], 
+             [8.887084007263184, 18.478761672973633, 2.0199999809265137], [18.74375343322754, 22.20650863647461, 2.0199999809265137],
+             [30.04375457763672, 22.20648956298828, 2.0199999809265137], [39.04375457763672, 19.206478118896484, 2.0199999809265137],
+            [45.74375534057617, 11.706478118896484, 2.0199999809265137], [45.74375534057617, 2.2064781188964844, 2.0199999809265137], 
+            [40.343753814697266, -4.793521404266357, 2.0199999809265137], [30.74375343322754, -7.893521785736084,2.0199999809265137],
+            [18.54375457763672, -7.893521785736084, 2.0199999809265137], [9.543754577636719, -5.093521595001221, 2.0199999809265137]]
+
+WAYPOINTS_ANGLES = [
+    15, 30, 45,60,75,90,120,135,150,165,180,195]
+
 # WAYPOINTS = [
 #     [-6.321, 78.212, -55.780], [5.144, 82.385, -55.780], [14.559, 84.432, -55.180],
 #     [22.859, 82.832, -32.080], [38.259, 78.132, -31.380], [51.059, 52.132, -25.880],
@@ -160,12 +171,12 @@ def state_based_pid_control(pidC):
             final_approach_velocity = [control_signal[0]/5, control_signal[1]/5, control_signal[2]/5]
             current_pos = client.getMultirotorState().kinematics_estimated.position
             start_time = time.time()
-            if(start_time - stuck_timestamp > 30 ):
+            if(start_time - stuck_timestamp > 10 ):
                 client.simSetVehiclePose(airsim.Pose(airsim.Vector3r(wp[0], wp[1], wp[2]), airsim.to_quaternion(0, 0, 0)), True)
                 print("fixing stuck")
 
             print("TIME:" , start_time - run_start_time)
-            if(start_time - run_start_time > 240): 
+            if(start_time - run_start_time > 120): 
                 client.simSetVehiclePose(airsim.Pose(airsim.Vector3r(6.788, 81.6774, -43.380), 
                                     airsim.to_quaternion(0, 0, 0)), True)
                 return np.array(gate_clearance_positions), collision_count, start_time - run_start_time
@@ -176,8 +187,8 @@ def state_based_pid_control(pidC):
             current_pos = client.getMultirotorState().kinematics_estimated.position
             gate_clearance_positions.append([current_pos.x_val, current_pos.y_val, current_pos.z_val])
             
-            clearance_time = 1
-            if(i == 12 ): clearance_time =4
+            clearance_time = 1.5
+            # if(i == 12 ): clearance_time =4
             start_time = time.time()
             # print("TIME:" , start_time - run_start_time)
             if(start_time - run_start_time > 240): 
@@ -608,17 +619,42 @@ def plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurati
     
     # Colors for different gain configurations
     colors = [
-        'blue', 'red', 'green', 'yellow', 'orange', 'pink', 'purple', 
-        'brown', 'black', 'white', 'gray', 'cyan', 'magenta', 'violet', 
-        'indigo', 'beige', 'salmon', 'turquoise', 'teal', 'lime', 'peach', 
-        'lavender', 'gold', 'silver', 'bronze', 'emerald', 'crimson', 'navy', 
-        'charcoal', 'mint', 'coral', 'fuchsia', 'amber', 'plum', 'chartreuse', 
-        'ivory', 'ruby', 'sapphire', 'topaz', 'tan', 'maroon', 'khaki', 'azure', 
-        'apricot', 'pearl', 'lavenderblush', 'orchid', 'periwinkle', 'rosy', 
-        'sepia', 'mauve', 'sage', 'lemon', 'honeydew', 'cobalt', 'magenta', 
-        'snow'
+    'black', 'blanchedalmond', 'blue',
+    'blueviolet', 'brown', 'burlywood', 'cadetblue',
+    'chartreuse', 'chocolate', 'coral', 'cornflowerblue',
+    'cornsilk', 'crimson', 'cyan', 'darkblue', 'darkcyan',
+    'darkgoldenrod', 'darkgray', 'darkgrey', 'darkgreen',
+    'darkkhaki', 'darkmagenta', 'darkolivegreen', 'darkorange',
+    'darkorchid', 'darkred', 'darksalmon', 'darkseagreen',
+    'darkslateblue', 'darkslategray', 'darkslategrey',
+    'darkturquoise', 'darkviolet', 'deeppink', 'deepskyblue',
+    'dimgray', 'dimgrey', 'dodgerblue', 'firebrick',
+    'floralwhite', 'forestgreen', 'fuchsia', 'gainsboro',
+    'ghostwhite', 'gold', 'goldenrod', 'gray', 'grey', 'green',
+    'greenyellow', 'honeydew', 'hotpink', 'indianred', 'indigo',
+    'ivory', 'khaki', 'lavender', 'lavenderblush', 'lawngreen',
+    'lemonchiffon', 'lightblue', 'lightcoral', 'lightcyan',
+    'lightgoldenrodyellow', 'lightgray', 'lightgrey',
+    'lightgreen', 'lightpink', 'lightsalmon', 'lightseagreen',
+    'lightskyblue', 'lightslategray', 'lightslategrey',
+    'lightsteelblue', 'lightyellow', 'lime', 'limegreen',
+    'linen', 'magenta', 'maroon', 'mediumaquamarine',
+    'mediumblue', 'mediumorchid', 'mediumpurple',
+    'mediumseagreen', 'mediumslateblue', 'mediumspringgreen',
+    'mediumturquoise', 'mediumvioletred', 'midnightblue',
+    'mintcream', 'mistyrose', 'moccasin', 'navajowhite', 'navy',
+    'oldlace', 'olive', 'olivedrab', 'orange', 'orangered',
+    'orchid', 'palegoldenrod', 'palegreen', 'paleturquoise',
+    'palevioletred', 'papayawhip', 'peachpuff', 'peru', 'pink',
+    'plum', 'powderblue', 'purple', 'red', 'rosybrown',
+    'royalblue', 'rebeccapurple', 'saddlebrown', 'salmon',
+    'sandybrown', 'seagreen', 'seashell', 'sienna', 'silver',
+    'skyblue', 'slateblue', 'slategray', 'slategrey', 'snow',
+    'springgreen', 'steelblue', 'tan', 'teal', 'thistle', 'tomato',
+    'turquoise', 'violet', 'wheat', 'white', 'whitesmoke',
+    'yellow', 'yellowgreen'
     ]
-    
+
     # Plot drone paths for each configuration
     for i, drone_path in enumerate(all_drone_paths):
         drone_path = np.array(drone_path)
@@ -707,11 +743,21 @@ def plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurati
     fig.show()
 
 
+def convert_ndarray_to_list(data):
+    if isinstance(data, np.ndarray):
+        return data.tolist()
+    elif isinstance(data, list):
+        return [convert_ndarray_to_list(item) for item in data]
+    else:
+        return data
 
 
 
 if __name__ == "__main__":
     # main()
+    # move_by_waypoints() 
+    
+
     gain_configurations = [
         {
             'gain_x': [5, 0, 8.0],
@@ -737,54 +783,137 @@ if __name__ == "__main__":
             'gain_x': [2, 0, 5.5],
             'gain_y': [2, 0, 5.5],
             'gain_z': [6, 0, 5.0]
-        }
+        },
+    # {'gain_x': [3, 0, 6.0], 'gain_y': [3, 0, 6.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [4, 0, 7.5], 'gain_y': [4, 0, 7.5], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [5, 0, 7.0], 'gain_y': [5, 0, 7.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [6, 0, 7.5], 'gain_y': [6, 0, 7.5], 'gain_z': [6, 0, 5.0]},
+    {'gain_x': [7, 0, 8.0], 'gain_y': [7, 0, 8.0], 'gain_z': [6, 0, 5.0]},
+    {'gain_x': [3, 0, 9.0], 'gain_y': [3, 0, 9.0], 'gain_z': [6, 0, 5.0]},
+    {'gain_x': [4, 0, 8.5], 'gain_y': [4, 0, 8.5], 'gain_z': [6, 0, 5.0]},
+    {'gain_x': [5, 0, 8.0], 'gain_y': [5, 0, 8.0], 'gain_z': [6, 0, 5.0]}
+    # {'gain_x': [6, 0, 9.5], 'gain_y': [6, 0, 9.5], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [7, 0, 10.0], 'gain_y': [7, 0, 10.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [3, 0, 5.5], 'gain_y': [3, 0, 5.5], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [4, 0, 6.0], 'gain_y': [4, 0, 6.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [5, 0, 6.5], 'gain_y': [5, 0, 6.5], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [6, 0, 7.0], 'gain_y': [6, 0, 7.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [7, 0, 8.0], 'gain_y': [7, 0, 8.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [4, 0, 10.0], 'gain_y': [4, 0, 10.0], 'gain_z': [6, 0, 4.0]},
+    # {'gain_x': [3, 0, 5.0], 'gain_y': [3, 0, 5.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [4, 0, 6.0], 'gain_y': [4, 0, 6.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [5, 0, 7.5], 'gain_y': [5, 0, 7.5], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [6, 0, 8.0], 'gain_y': [6, 0, 8.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [7, 0, 9.0], 'gain_y': [7, 0, 9.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [8, 0, 6.0], 'gain_y': [8, 0, 6.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [6, 0, 6.5], 'gain_y': [6, 0, 6.5], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [7, 0, 5.5], 'gain_y': [7, 0, 5.5], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [8, 0, 9.0], 'gain_y': [8, 0, 9.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [4, 0, 6.0], 'gain_y': [4, 0, 6.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [5, 0, 8.5], 'gain_y': [5, 0, 8.5], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [7, 0, 10.0], 'gain_y': [7, 0, 10.0], 'gain_z': [6, 0, 4.5]},
+    # {'gain_x': [6, 0, 9.5], 'gain_y': [6, 0, 9.5], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [5, 0, 7.0], 'gain_y': [5, 0, 7.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [4, 0, 8.5], 'gain_y': [4, 0, 8.5], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [3, 0, 5.5], 'gain_y': [3, 0, 5.5], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [4, 0, 6.5], 'gain_y': [4, 0, 6.5], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [6, 0, 8.5], 'gain_y': [6, 0, 8.5], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [5, 0, 6.0], 'gain_y': [5, 0, 6.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [7, 0, 7.0], 'gain_y': [7, 0, 7.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [8, 0, 5.0], 'gain_y': [8, 0, 5.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [5, 0, 6.0], 'gain_y': [5, 0, 6.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [6, 0, 8.0], 'gain_y': [6, 0, 8.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [7, 0, 6.5], 'gain_y': [7, 0, 6.5], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [8, 0, 7.0], 'gain_y': [8, 0, 7.0], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [4, 0, 9.5], 'gain_y': [4, 0, 9.5], 'gain_z': [6, 0, 5.0]},
+    # {'gain_x': [6, 0, 5.0], 'gain_y': [6, 0, 5.0], 'gain_z': [6, 0, 5.0]}
     ]
     
     all_gate_positions = []
     all_drone_paths = []
     collision_counts = [] 
     runtimes = []  
-    target_x=6.788
-    target_y=81.6774
-    target_z =-43.380
-    # Run each configuration
-    for gains in gain_configurations:
-        print(f"\nTesting gains: {gains}")
+    # target_x=6.788
+    # target_y=81.6774
+    # target_z =-43.380
+    print("hey there")
+    target_x=0
+    target_y=0
+    target_z =2.0199999809265137
+    with open("experiment_results.json", "r") as infile:
+        data = json.load(infile)
+
+    # Assign each field to its respective array
+    all_gate_positions = data.get("gate_positions", [])
+    all_drone_paths = data.get("drone_paths", [])
+    collision_counts = data.get("collision_counts", [])
+    runtimes = data.get("runtimes", [])
+    gain_configurations = data.get("gain_configurations", [])
+
+    # # Run each configuration
+    # for gains in gain_configurations:
+    #     print(f"\nTesting gains: {gains}")
         
-        # Reset drone position
-        client.simSetVehiclePose(airsim.Pose(airsim.Vector3r(target_x, target_y, target_z), 
-                                            airsim.to_quaternion(0, 0, 0)), True)
+    #     # Reset drone position
+    #     client.simSetVehiclePose(airsim.Pose(airsim.Vector3r(target_x, target_y, target_z), 
+    #                                         airsim.to_quaternion(0, 0, 0)), True)
 
 
-        time.sleep(3)
-        client.takeoffAsync(5).join()
+    #     time.sleep(3)
+    #     client.takeoffAsync().join()
         
-        # Initialize PID controller with current gains
-        pidC = PIDController(gain_x=gains['gain_x'], 
-                          gain_y=gains['gain_y'], 
-                          gain_z=gains['gain_z'])
+    #     # Initialize PID controller with current gains
+    #     pidC = PIDController(gain_x=gains['gain_x'], 
+    #                       gain_y=gains['gain_y'], 
+    #                       gain_z=gains['gain_z'])
         
-        # Run controller and store results
-        gate_positions, collision_count, total_runtime  = state_based_pid_control(pidC)
-        # if(collision_count != -1):
-        all_gate_positions.append(gate_positions)
-        all_drone_paths.append(drone_path.copy())  # Make sure to copy the drone_path
-        collision_counts.append(collision_count)
-        runtimes.append(total_runtime)
-        # Land and reset
-        client.landAsync().join()
-        client.armDisarm(True)
-        client.enableApiControl(True)
-        time.sleep(5)  # Wait between runs
+    #     # Run controller and store results
+    #     gate_positions, collision_count, total_runtime  = state_based_pid_control(pidC)
+
+    #     data_to_save = {
+    #         "gate_positions": convert_ndarray_to_list(all_gate_positions),
+    #         "drone_paths": convert_ndarray_to_list(all_drone_paths),
+    #         "collision_counts": collision_counts,
+    #         "runtimes": runtimes,
+    #         "gain_configurations": gain_configurations  # Save gain configurations as well for easy reference
+    #     }
+
+    #     # Write to a JSON file
+    #     with open("experiment_results.json", "w") as outfile:
+    #         json.dump(data_to_save, outfile, indent=4)
+    #     print("Data saved to experiment_results.json")
+
+    #     # if(collision_count != -1):
+    #     all_gate_positions.append(gate_positions)
+    #     all_drone_paths.append(drone_path.copy())  # Make sure to copy the drone_path
+    #     collision_counts.append(collision_count)
+    #     runtimes.append(total_runtime)
+    #     # Land and reset
+    #     client.landAsync().join()
+    #     client.armDisarm(True)
+    #     client.enableApiControl(True)
+        # time.sleep(5)  # Wait between runs
     
     # Plot combined results
     # plot_combined_gate_errors(all_gate_positions, gain_configurations, WAYPOINTS)
     plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurations, WAYPOINTS, WAYPOINTS_ANGLES)
 
-    # Convert the gain configurations to strings for the x-axis
     gain_strings_x = [str(gains['gain_x']) for gains in gain_configurations]
     gain_strings_y = [str(gains['gain_y']) for gains in gain_configurations]
     gain_strings_z = [str(gains['gain_z']) for gains in gain_configurations]
+
+    min_length = min(len(gain_strings_x), len(gain_strings_y), len(gain_strings_z), len(collision_counts), len(runtimes))
+ 
+    # Truncate each array to the minimum length
+    gain_strings_x = gain_strings_x[:min_length]
+    gain_strings_y = gain_strings_y[:min_length]
+    gain_strings_z = gain_strings_z[:min_length]
+    collision_counts = collision_counts[:min_length]
+    runtimes = runtimes[:min_length]
+
+
+    # Convert the gain configurations to strings for the x-axis
+
     
     # Plot Collision Count vs Gain Values (strings)
     fig, axes = plt.subplots(1, 2, figsize=(18, 6))
@@ -820,7 +949,7 @@ if __name__ == "__main__":
     fig, axes = plt.subplots(1, 2, figsize=(18, 6))
     
     # Plot for gain_x vs runtime
-    axes[0].plot(gain_strings_x, runtimes, label="Runtime vs gain_x", marker='o')
+    axes[0].scatter(gain_strings_x, runtimes, label="Runtime vs gain_x", marker='o')
     axes[0].set_xlabel('gain_x')
     axes[0].set_ylabel('Total Runtime (seconds)')
     axes[0].set_title('Runtime vs gain_x')
@@ -828,7 +957,7 @@ if __name__ == "__main__":
     axes[0].tick_params(axis='x', rotation=45)  # Rotate x labels for better readability
 
     # Plot for gain_y vs runtime
-    axes[1].plot(gain_strings_y, runtimes, label="Runtime vs gain_y", marker='o')
+    axes[1].scatter(gain_strings_y, runtimes, label="Runtime vs gain_y", marker='o')
     axes[1].set_xlabel('gain_y')
     axes[1].set_ylabel('Total Runtime (seconds)')
     axes[1].set_title('Runtime vs gain_y')
@@ -851,6 +980,11 @@ if __name__ == "__main__":
     gain_x_D = [config["gain_x"][2] for config in gain_configurations]  # D component of gain_x
     gain_y_P = [config["gain_y"][0] for config in gain_configurations]  # P component of gain_y
     gain_y_D = [config["gain_y"][2] for config in gain_configurations]  # D component of gain_y
+
+    gain_x_P = gain_x_P[:min_length]
+    gain_x_D = gain_x_D[:min_length]
+    gain_y_P = gain_y_P[:min_length]
+    gain_y_D = gain_y_D[:min_length]
 
     # Create scatter plots
     fig, axs = plt.subplots(2, 2, figsize=(10, 8))
@@ -904,3 +1038,12 @@ if __name__ == "__main__":
 # 		}
 # 	}
 # }
+
+
+# Traceback (most recent call last):
+#   File "C:\Users\yello\Desktop\499\ADRL\gates.py", line 890, in <module>
+#     plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurations, WAYPOINTS, WAYPOINTS)
+#   File "C:\Users\yello\Desktop\499\ADRL\gates.py", line 694, in plot_combined_3d_paths
+#     rotation_matrix = np.array([
+#                       ^^^^^^^^^^
+# ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 2 dimensions. The detected shape was (3, 3) + inhomogeneous part.
