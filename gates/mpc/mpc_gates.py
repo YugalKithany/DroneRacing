@@ -32,9 +32,27 @@ WAYPOINTS_ANGLES = [ -15, -45, -60, -90 ,-115, 0, 0,  -45,  -90 , -135, -180, -1
 #             [45.74375534057617, 11.706478118896484, 2.0199999809265137], [45.74375534057617, 2.2064781188964844, 2.0199999809265137], 
 #             [40.343753814697266, -4.793521404266357, 2.0199999809265137], [30.74375343322754, -7.893521785736084,2.0199999809265137],
 #             [18.54375457763672, -7.893521785736084, 2.0199999809265137], [9.543754577636719, -5.093521595001221, 2.0199999809265137]]
-
 # WAYPOINTS_ANGLES = [
 #     15, 30, 45,60,75,90,120,135,150,165,180,195]
+# WAYPOINTS = [
+#  [0.000, 0.000, 2.020 ], [0.251, 2.610, 2.020  ], [0.643, 5.583, 2.022  ], [1.086, 8.550, 2.023  ], [1.966, 11.395, 2.046 ], 
+#  [3.191, 14.098, 2.160 ],  [5.537, 15.950, 2.106 ],  [7.986, 17.676, 2.033 ],  [9.934, 19.922, 2.176 ],  [12.016, 21.961, 2.381],
+#  [14.991, 22.020, 2.241], [17.972, 22.051, 2.052], [20.895, 21.761, 2.019], [23.779, 21.025, 2.022], [26.747, 21.400, 2.021],
+#  [29.657, 22.131, 2.020], [32.548, 22.169, 1.920], [35.457, 21.609, 1.901], [37.847, 19.808, 1.989], [37.465, 20.118, 2.011], [35.790, 17.531, 2.020],
+#  [38.131, 15.716, 2.020], [40.683, 14.145, 2.020], [43.295, 12.679, 2.020], [44.962, 11.294, 2.020], [42.623, 9.430, 2.023 ], 
+#  [42.555, 6.647, 2.005 ],  [44.334, 4.238, 2.002 ],  [45.085, 2.097, 1.954 ],  [42.367, 1.166, 1.634 ],  [41.107, -1.493, 1.438], [40.606, -4.367, 1.912],
+#  [37.860, -5.364, 2.004], [35.025, -6.340, 2.018], [32.244, -7.464, 2.024], [29.497, -7.050, 2.346], [27.124, -5.416, 3.048], [24.147, -5.313, 3.103],
+#  [21.259, -6.023, 2.809], [21.208, -7.796, 2.056], [18.500, -7.769, 2.028], [15.614, -6.966, 2.009], [12.783, -5.974, 2.015], [9.544, -5.094, 2.020 ]]
+
+
+# WAYPOINTS_ANGLES = [15, 30, 45,60,75,90,120,135,150,165,180,195,15, 30, 45,60,75,90,120,135,150,165,180,195,15, 30, 45,60,75,90,120,135,150,165,180,195,15, 30, 45,60,75,90,120,135,150,165,180,195]
+# WAYPOINTS_ANGLES = [15, 15, 15, 30, 30, 30, 45, 45, 45, 60, 60, 60, 75, 75, 75, 90, 90, 90, 90, 90, 90, 120, 120, 120, 135, 135, 135, 135, 150, 150,150,150, 150, 165, 165, 165, 180,180,180, 180, 180, 195, 195, 195]
+# WAYPOINTS_ANGLES = [
+#     15, 15, 15, 15, 30, 30, 30, 30, 45, 45, 45, 45,
+#     60, 60, 60, 60, 75, 75, 75, 75, 90, 90, 90, 90,
+#     120, 120, 120, 120, 135, 135, 135, 135, 150, 150, 150, 150,
+#     165, 165, 165, 165, 180, 180, 180, 180, 195, 195, 195, 195
+# ]
 
 
 # 			"X":10.388,
@@ -132,86 +150,6 @@ def calculate_yaw_angle(current_pos, target_pos):
 
 
 
-def state_based_pid_control(pidC):
-    global drone_path
-    drone_path = []
-    gate_clearance_positions = []  # Store positions where gates were cleared
-    collision_count = 0
-    run_start_time = time.time()
-    for i, wp in enumerate(WAYPOINTS):
-        print(f"Target waypoint: {wp}")
-        current_pos = client.getMultirotorState().kinematics_estimated.position
-        pidC.update_setpoint(wp)
-        
-        final_approach_velocity = [0, 0, 0]
-        stuck_timestamp = time.time()
-        while not np.allclose([current_pos.x_val, current_pos.y_val, current_pos.z_val], wp, atol=1.5):
-            current_coords = np.array([current_pos.x_val, current_pos.y_val, current_pos.z_val])
-            drone_path.append([current_pos.x_val, current_pos.y_val, current_pos.z_val])
-            
-            control_signal = pidC.update(current_coords, dt=1)
-            control_signal = np.clip(control_signal, -5, 5)
-            
-            yaw_angle = calculate_yaw_angle(current_coords, wp)
-            client.moveByVelocityAsync(
-                control_signal[0]/2, 
-                control_signal[1]/2, 
-                control_signal[2]/5, 
-                0.5,
-                airsim.DrivetrainType.MaxDegreeOfFreedom,
-                airsim.YawMode(False, yaw_angle)
-            ).join()
-            
-            collision_info = client.simGetCollisionInfo()
-            if collision_info.has_collided:
-                collision_count += 1 
-
-            final_approach_velocity = [control_signal[0]/5, control_signal[1]/5, control_signal[2]/5]
-            current_pos = client.getMultirotorState().kinematics_estimated.position
-            start_time = time.time()
-            if(start_time - stuck_timestamp > 30 ): # TODO stuck time
-                client.simSetVehiclePose(airsim.Pose(airsim.Vector3r(wp[0], wp[1], wp[2]), airsim.to_quaternion(0, 0, 0)), True)
-                print("fixing stuck")
-
-            print("TIME:" , start_time - run_start_time) #TODO RUN fail return
-            if(start_time - run_start_time > 320): 
-                client.simSetVehiclePose(airsim.Pose(airsim.Vector3r(6.788, 81.6774, -43.380), 
-                                    airsim.to_quaternion(0, 0, 0)), True)
-                return np.array(gate_clearance_positions), collision_count, start_time - run_start_time
-
-        if i < len(WAYPOINTS) - 1:
-            print("Clearing gate...")
-            # Store position at gate clearance
-            current_pos = client.getMultirotorState().kinematics_estimated.position
-            gate_clearance_positions.append([current_pos.x_val, current_pos.y_val, current_pos.z_val])
-            
-            clearance_time = 1.5
-            start_time = time.time()
-
-            while time.time() - start_time < clearance_time:
-                current_pos = client.getMultirotorState().kinematics_estimated.position
-                drone_path.append([current_pos.x_val, current_pos.y_val, current_pos.z_val])
-                
-                client.moveByVelocityAsync(
-                    final_approach_velocity[0],
-                    final_approach_velocity[1],
-                    final_approach_velocity[2],
-                    0.1,
-                    airsim.DrivetrainType.MaxDegreeOfFreedom,
-                    airsim.YawMode(False, yaw_angle)
-                ).join()
-
-                collision_info = client.simGetCollisionInfo()
-                if collision_info.has_collided:
-                    collision_count += 1
-
-    end_time = time.time()
-    total_runtime = end_time - run_start_time
-    print("Completed all waypoints")
-    return np.array(gate_clearance_positions), collision_count, total_runtime
-
-
-
 
 def state_based_mpc_control(mpc_controller):
     """
@@ -271,14 +209,14 @@ def state_based_mpc_control(mpc_controller):
             
             # Handle stuck condition
             current_time = time.time()
-            if(current_time - stuck_timestamp > 10):
+            if(current_time - stuck_timestamp > 20):
                 client.simSetVehiclePose(airsim.Pose(airsim.Vector3r(wp[0], wp[1], wp[2]), 
                                                     airsim.to_quaternion(0, 0, 0)), True)
                 print("fixing stuck")
                 stuck_timestamp = current_time
 
             # Check timeout condition
-            if(current_time - run_start_time > 120): 
+            if(current_time - run_start_time > 320): 
                 client.simSetVehiclePose(airsim.Pose(airsim.Vector3r(6.788, 81.6774, -43.380), 
                                     airsim.to_quaternion(0, 0, 0)), True)
                 return np.array(gate_clearance_positions), collision_count, current_time - run_start_time
@@ -289,7 +227,7 @@ def state_based_mpc_control(mpc_controller):
             current_pos = client.getMultirotorState().kinematics_estimated.position
             gate_clearance_positions.append([current_pos.x_val, current_pos.y_val, current_pos.z_val])
             
-            clearance_time = 1.5
+            clearance_time = 00
             start_time = time.time()
             
             if(start_time - run_start_time > 240): 
@@ -524,12 +462,29 @@ def main_mpc():
         # Run the control loop
         gate_positions, collisions, runtime = state_based_mpc_control(mpc)
         
+        
+        data_to_save = {
+            "gate_positions": convert_ndarray_to_list(gate_positions),
+            "drone_paths": convert_ndarray_to_list(drone_path),
+            "collision_counts": collisions,
+            "runtimes": runtime
+            # "gain_configurations": gain_configurations  # Save gain configurations as well for easy reference
+        }
+
+        # Write to a JSON file
+        with open("mpc_raw_qual1.json", "w") as outfile:
+            json.dump(data_to_save, outfile, indent=4)
+        print("Data saved to experiment_results.json")
+
+
         # Print results
         print(f"Flight completed:")
         print(f"Runtime: {runtime:.2f} seconds")
         print(f"Collisions: {collisions}")
         print(f"Gates cleared: {len(gate_positions)}")
         
+
+
     except Exception as e:
         print(f"Flight failed with error: {str(e)}")
     
@@ -542,7 +497,7 @@ def main_mpc():
 
 
 if __name__ == "__main__":
-    main_mpc()
+    # main_mpc()
 
     gain_configurations = [
     {'gain_x': [5, 0, 8.0], 'gain_y': [5, 0, 8.0], 'gain_z': [6, 0, 5.0]},
@@ -608,15 +563,16 @@ if __name__ == "__main__":
     target_z =-43.380
     # client.simSetVehiclePose(airsim.Pose(airsim.Vector3r(target_x, target_y, target_z), 
     #                                         airsim.to_quaternion(0, 0, 0)), True)
-    # with open("experiment_results.json", "r") as infile:
-    #     data = json.load(infile)
+    with open("pid_raw_qual1.json", "r") as infile:
+        data = json.load(infile)
 
-    # # Assign each field to its respective array
+    # Assign each field to its respective array
     # all_gate_positions = data.get("gate_positions", [])
-    # all_drone_paths = data.get("drone_paths", [])
-    # collision_counts = data.get("collision_counts", [])
-    # runtimes = data.get("runtimes", [])
-    # gain_configurations = data.get("gain_configurations", [])
+    all_gate_positions = WAYPOINTS
+    all_drone_paths = data.get("drone_paths", [])
+    collision_counts = data.get("collision_counts", [])
+    runtimes = data.get("runtimes", [])
+    gain_configurations = data.get("gain_configurations", [])
 
     # # Run each configuration
     # for gains in gain_configurations:
@@ -664,77 +620,77 @@ if __name__ == "__main__":
     
     # Plot combined results
     # plot_combined_gate_errors(all_gate_positions, gain_configurations, WAYPOINTS)
-    # plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurations, WAYPOINTS, WAYPOINTS_ANGLES)
+    plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurations, WAYPOINTS, WAYPOINTS_ANGLES)
 
-    # gain_strings_x = [str(gains['gain_x']) for gains in gain_configurations]
-    # gain_strings_y = [str(gains['gain_y']) for gains in gain_configurations]
-    # gain_strings_z = [str(gains['gain_z']) for gains in gain_configurations]
+    gain_strings_x = [str(gains['gain_x']) for gains in gain_configurations]
+    gain_strings_y = [str(gains['gain_y']) for gains in gain_configurations]
+    gain_strings_z = [str(gains['gain_z']) for gains in gain_configurations]
 
-    # min_length = min(len(gain_strings_x), len(gain_strings_y), len(gain_strings_z), len(collision_counts), len(runtimes))
+    min_length = min(len(gain_strings_x), len(gain_strings_y), len(gain_strings_z), len(collision_counts), len(runtimes))
  
-    # # Truncate each array to the minimum length
-    # gain_strings_x = gain_strings_x[:min_length]
-    # gain_strings_y = gain_strings_y[:min_length]
-    # gain_strings_z = gain_strings_z[:min_length]
-    # collision_counts = collision_counts[:min_length]
-    # runtimes = runtimes[:min_length]
+    # Truncate each array to the minimum length
+    gain_strings_x = gain_strings_x[:min_length]
+    gain_strings_y = gain_strings_y[:min_length]
+    gain_strings_z = gain_strings_z[:min_length]
+    collision_counts = collision_counts[:min_length]
+    runtimes = runtimes[:min_length]
 
 
-    # # Plot Collision Count vs Gain Values (strings) second 1 is # plots
-    # fig, axes = plt.subplots(1, 1, figsize=(18, 6))
+    # Plot Collision Count vs Gain Values (strings) second 1 is # plots
+    fig, axes = plt.subplots(1, 1, figsize=(18, 6))
     
-    # # Plot for gain_x vs collision count
-    # axes.scatter(gain_strings_x, collision_counts, label="Collision count vs gain", marker='o')
-    # axes.set_xlabel('gain')
-    # axes.set_ylabel('Collision Count')
-    # axes.set_title('Collision Count vs gain')
-    # axes.grid(True)
-    # axes.tick_params(axis='x', rotation=45)  # Rotate x labels for better readability
+    # Plot for gain_x vs collision count
+    axes.scatter(gain_strings_x, collision_counts, label="Collision count vs gain", marker='o')
+    axes.set_xlabel('gain')
+    axes.set_ylabel('Collision Count')
+    axes.set_title('Collision Count vs gain')
+    axes.grid(True)
+    axes.tick_params(axis='x', rotation=45)  # Rotate x labels for better readability
 
-    # plt.tight_layout()
-    # plt.show()
+    plt.tight_layout()
+    plt.show()
 
-    # # Plot Runtime vs Gain Values (strings)
-    # fig, axes = plt.subplots(1, 1, figsize=(18, 6))
+    # Plot Runtime vs Gain Values (strings)
+    fig, axes = plt.subplots(1, 1, figsize=(18, 6))
     
-    # # Plot for gain_x vs runtime
-    # axes.scatter(gain_strings_x, runtimes, label="Runtime vs gain", marker='o')
-    # axes.set_xlabel('gain')
-    # axes.set_ylabel('Total Runtime (seconds)')
-    # axes.set_title('Runtime vs gain')
-    # axes.grid(True)
-    # axes.tick_params(axis='x', rotation=45)  # Rotate x labels for better readability
+    # Plot for gain_x vs runtime
+    axes.scatter(gain_strings_x, runtimes, label="Runtime vs gain", marker='o')
+    axes.set_xlabel('gain')
+    axes.set_ylabel('Total Runtime (seconds)')
+    axes.set_title('Runtime vs gain')
+    axes.grid(True)
+    axes.tick_params(axis='x', rotation=45)  # Rotate x labels for better readability
 
-    # plt.tight_layout()
-    # plt.show()
+    plt.tight_layout()
+    plt.show()
 
-    # # Access gain components from dictionaries
-    # gain_x_P = [config["gain_x"][0] for config in gain_configurations]  # P component of gain_x
-    # gain_x_D = [config["gain_x"][2] for config in gain_configurations]  # D component of gain_x
-    # gain_y_P = [config["gain_y"][0] for config in gain_configurations]  # P component of gain_y
-    # gain_y_D = [config["gain_y"][2] for config in gain_configurations]  # D component of gain_y
+    # Access gain components from dictionaries
+    gain_x_P = [config["gain_x"][0] for config in gain_configurations]  # P component of gain_x
+    gain_x_D = [config["gain_x"][2] for config in gain_configurations]  # D component of gain_x
+    gain_y_P = [config["gain_y"][0] for config in gain_configurations]  # P component of gain_y
+    gain_y_D = [config["gain_y"][2] for config in gain_configurations]  # D component of gain_y
 
-    # gain_x_P = gain_x_P[:min_length]
-    # gain_x_D = gain_x_D[:min_length]
-    # gain_y_P = gain_y_P[:min_length]
-    # gain_y_D = gain_y_D[:min_length]
+    gain_x_P = gain_x_P[:min_length]
+    gain_x_D = gain_x_D[:min_length]
+    gain_y_P = gain_y_P[:min_length]
+    gain_y_D = gain_y_D[:min_length]
 
-    # # Create scatter plots
-    # fig, axs = plt.subplots(1, 2, figsize=(10, 8))
-    # fig.suptitle("Runtime vs PID Gain Components")
+    # Create scatter plots
+    fig, axs = plt.subplots(1, 2, figsize=(10, 8))
+    fig.suptitle("Runtime vs PID Gain Components")
 
-    # # Plot runtime vs gain_x_P
-    # axs[0].scatter(gain_x_P, runtimes, color="b")
-    # axs[0].set_xlabel("gain_P")
-    # axs[0].set_ylabel("Runtime")
-    # axs[0].set_title("Runtime vs gain_P")
+    # Plot runtime vs gain_x_P
+    axs[0].scatter(gain_x_P, runtimes, color="b")
+    axs[0].set_xlabel("gain_P")
+    axs[0].set_ylabel("Runtime")
+    axs[0].set_title("Runtime vs gain_P")
 
-    # # Plot runtime vs gain_x_D
-    # axs[1].scatter(gain_x_D, runtimes, color="g")
-    # axs[1].set_xlabel("gain_D")
-    # axs[1].set_ylabel("Runtime")
-    # axs[1].set_title("Runtime vs gain_D")
+    # Plot runtime vs gain_x_D
+    axs[1].scatter(gain_x_D, runtimes, color="g")
+    axs[1].set_xlabel("gain_D")
+    axs[1].set_ylabel("Runtime")
+    axs[1].set_title("Runtime vs gain_D")
 
-    # plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    # plt.show()
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plt.show()
 

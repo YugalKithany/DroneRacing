@@ -36,16 +36,16 @@ class PIDController:
             current_p = self.Kp
             current_d = self.Kd
             
-        self.integral += error * dt
+        # self.integral += error * dt
         
         # More aggressive integral windup prevention
-        integral_limit = 5  # Reduced from 10
-        self.integral = np.clip(self.integral, -integral_limit, integral_limit)
+        # integral_limit = 5  # Reduced from 10
+        self.integral = 0 #np.clip(self.integral, -integral_limit, integral_limit)
         
         derivative = (error - self.prev_error) / max(dt, 0.01)
         
         # Calculate control signal with scaled gains
-        output = current_p * error + self.Ki * self.integral + current_d * derivative
+        output = current_p * error + self.Ki * 0 + current_d * derivative
         
         # More conservative output limiting
         output = np.clip(output, -self.output_limit, self.output_limit)

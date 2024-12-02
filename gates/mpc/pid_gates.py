@@ -12,18 +12,18 @@ import json
 from datetime import datetime
 
 # Waypoints for drone navigation waypoints_qualifier1.yaml from rovery script TODO-Remake this, ensure it is center of gate
-WAYPOINTS = [
-    [10.388, 80.774, -43.580], [18.110, 76.260, -43.580], [25.434, 66.287, -43.580],
-    [30.066, 56.550, -43.580], [32.801, 45.931, -43.580], [30.503, 38.200, -43.580],
-    [3.264, 37.569, -43.580], [-17.863, 45.418, -46.580], [-15.494, 63.187, -52.080],
-    [-6.321, 78.212, -55.780], [ 5.144, 82.385, -55.780], [14.559, 84.432, -55.180],
-    [22.859, 82.832, -32.080], [38.259, 78.132, -31.380], [51.059, 52.132, -25.880],
-    [44.959, 38.932, -25.880], [25.959, 26.332, -17.880], [11.659, 26.332, -13.780],
-    [-10.141, 22.632, -6.380], [-23.641, 10.132, 2.120]
-]
+# WAYPOINTS = [
+#     [10.388, 80.774, -43.580], [18.110, 76.260, -43.580], [25.434, 66.287, -43.580],
+#     [30.066, 56.550, -43.580], [32.801, 45.931, -43.580], [30.503, 38.200, -43.580],
+#     [3.264, 37.569, -43.580], [-17.863, 45.418, -46.580], [-15.494, 63.187, -52.080],
+#     [-6.321, 78.212, -55.780], [ 5.144, 82.385, -55.780], [14.559, 84.432, -55.180],
+#     [22.859, 82.832, -32.080], [38.259, 78.132, -31.380], [51.059, 52.132, -25.880],
+#     [44.959, 38.932, -25.880], [25.959, 26.332, -17.880], [11.659, 26.332, -13.780],
+#     [-10.141, 22.632, -6.380], [-23.641, 10.132, 2.120]
+# ]
 
-WAYPOINTS_ANGLES = [
-    -15, -45, -60, -90 ,-115, 0, 0,  -45,  -90 , -135, -180, -180, -30, -45, -60, -135, -180, -180, -195, -25 ]
+# WAYPOINTS_ANGLES = [
+#     -15, -45, -60, -90 ,-115, 0, 0,  -45,  -90 , -135, -180, -180, -30, -45, -60, -135, -180, -180, -195, -25 ]
 
 
 # WAYPOINTS = [[0.0, 2.0, 2.0199999809265137], [1.5999999046325684, 10.800000190734863, 2.0199999809265137], 
@@ -34,14 +34,55 @@ WAYPOINTS_ANGLES = [
 #             [18.54375457763672, -7.893521785736084, 2.0199999809265137], [9.543754577636719, -5.093521595001221, 2.0199999809265137]]
 
 # WAYPOINTS_ANGLES = [
-#     15, 30, 45,60,75,90,120,135,150,165,180,195]
+#     15, 120, 150 ,180,75,90,45,30,15,0,180,195]
+
 
 # WAYPOINTS = [
-#     [-6.321, 78.212, -55.780], [5.144, 82.385, -55.780], [14.559, 84.432, -55.180],
-#     [22.859, 82.832, -32.080], [38.259, 78.132, -31.380], [51.059, 52.132, -25.880],
-#     [44.959, 38.932, -25.880], [25.959, 26.332, -19.880], [11.659, 26.332, -12.780],
-#     [-10.141, 22.632, -6.380], [-24.641, 9.132, 2.120]
-# ]
+#  [-0.000, 0.000, 2.020 ], 
+#  [0.251, 2.610, 2.020  ],
+#  [0.643, 5.583, 2.022  ],
+#  [1.086, 8.550, 2.023  ],
+#  [1.966, 11.395, 2.046 ], 
+#  [3.191, 14.098, 2.160 ], 
+#  [5.537, 15.950, 2.106 ], 
+#  [7.986, 17.676, 2.033 ], 
+#  [9.934, 19.922, 2.176 ], 
+#  [12.016, 21.961, 2.381],
+#  [14.991, 22.020, 2.241],
+#  [17.972, 22.051, 2.052],
+#  [20.895, 21.761, 2.019],
+#  [23.779, 21.025, 2.022],
+#  [26.747, 21.400, 2.021],
+#  [29.657, 22.131, 2.020],
+#  [32.548, 22.169, 1.920],
+#  [35.457, 21.609, 1.901],
+#  [37.847, 19.808, 1.989],
+#  [37.465, 20.118, 2.011],
+# #  [35.102, 20.394, 2.022],
+#  [35.790, 17.531, 2.020],
+#  [38.131, 15.716, 2.020],
+#  [40.683, 14.145, 2.020],
+#  [43.295, 12.679, 2.020],
+#  [44.962, 11.294, 2.020],
+#  [42.623, 9.430, 2.023 ], 
+#  [42.555, 6.647, 2.005 ], 
+#  [44.334, 4.238, 2.002 ], 
+#  [45.085, 2.097, 1.954 ], 
+#  [42.367, 1.166, 1.634 ], 
+#  [41.107, -1.493, 1.438],
+#  [40.606, -4.367, 1.912],
+#  [37.860, -5.364, 2.004],
+#  [35.025, -6.340, 2.018],
+#  [32.244, -7.464, 2.024],
+#  [29.497, -7.050, 2.346],
+#  [27.124, -5.416, 3.048],
+#  [24.147, -5.313, 3.103],
+#  [21.259, -6.023, 2.809],
+#  [21.208, -7.796, 2.056],
+#  [18.500, -7.769, 2.028],
+#  [15.614, -6.966, 2.009],
+#  [12.783, -5.974, 2.015],
+#  [9.544, -5.094, 2.020 ]]
 
 
 
@@ -186,7 +227,7 @@ def state_based_pid_control(pidC):
             current_pos = client.getMultirotorState().kinematics_estimated.position
             gate_clearance_positions.append([current_pos.x_val, current_pos.y_val, current_pos.z_val])
             
-            clearance_time = 1.5
+            clearance_time = 1
             start_time = time.time()
 
             while time.time() - start_time < clearance_time:
@@ -241,56 +282,67 @@ def plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurati
     fig = go.Figure()
     
     # Colors for different gain configurations
-    colors = [
-    'black', 'blanchedalmond', 'blue',
-    'blueviolet', 'brown', 'burlywood', 'cadetblue',
-    'chartreuse', 'chocolate', 'coral', 'cornflowerblue',
-    'cornsilk', 'crimson', 'cyan', 'darkblue', 'darkcyan',
-    'darkgoldenrod', 'darkgray', 'darkgrey', 'darkgreen',
-    'darkkhaki', 'darkmagenta', 'darkolivegreen', 'darkorange',
-    'darkorchid', 'darkred', 'darksalmon', 'darkseagreen',
-    'darkslateblue', 'darkslategray', 'darkslategrey',
-    'darkturquoise', 'darkviolet', 'deeppink', 'deepskyblue',
-    'dimgray', 'dimgrey', 'dodgerblue', 'firebrick',
-    'floralwhite', 'forestgreen', 'fuchsia', 'gainsboro',
-    'ghostwhite', 'gold', 'goldenrod', 'gray', 'grey', 'green',
-    'greenyellow', 'honeydew', 'hotpink', 'indianred', 'indigo',
-    'ivory', 'khaki', 'lavender', 'lavenderblush', 'lawngreen',
-    'lemonchiffon', 'lightblue', 'lightcoral', 'lightcyan',
-    'lightgoldenrodyellow', 'lightgray', 'lightgrey',
-    'lightgreen', 'lightpink', 'lightsalmon', 'lightseagreen',
-    'lightskyblue', 'lightslategray', 'lightslategrey',
-    'lightsteelblue', 'lightyellow', 'lime', 'limegreen',
-    'linen', 'magenta', 'maroon', 'mediumaquamarine',
-    'mediumblue', 'mediumorchid', 'mediumpurple',
-    'mediumseagreen', 'mediumslateblue', 'mediumspringgreen',
-    'mediumturquoise', 'mediumvioletred', 'midnightblue',
-    'mintcream', 'mistyrose', 'moccasin', 'navajowhite', 'navy',
-    'oldlace', 'olive', 'olivedrab', 'orange', 'orangered',
-    'orchid', 'palegoldenrod', 'palegreen', 'paleturquoise',
-    'palevioletred', 'papayawhip', 'peachpuff', 'peru', 'pink',
-    'plum', 'powderblue', 'purple', 'red', 'rosybrown',
-    'royalblue', 'rebeccapurple', 'saddlebrown', 'salmon',
-    'sandybrown', 'seagreen', 'seashell', 'sienna', 'silver',
-    'skyblue', 'slateblue', 'slategray', 'slategrey', 'snow',
-    'springgreen', 'steelblue', 'tan', 'teal', 'thistle', 'tomato',
-    'turquoise', 'violet', 'wheat', 'white', 'whitesmoke',
-    'yellow', 'yellowgreen'
-    ]
+    # colors = [
+    # 'black', 'blanchedalmond', 'blue',
+    # 'blueviolet', 'brown', 'burlywood', 'cadetblue',
+    # 'chartreuse', 'chocolate', 'coral', 'cornflowerblue',
+    # 'cornsilk', 'crimson', 'cyan', 'darkblue', 'darkcyan',
+    # 'darkgoldenrod', 'darkgray', 'darkgrey', 'darkgreen',
+    # 'darkkhaki', 'darkmagenta', 'darkolivegreen', 'darkorange',
+    # 'darkorchid', 'darkred', 'darksalmon', 'darkseagreen',
+    # 'darkslateblue', 'darkslategray', 'darkslategrey',
+    # 'darkturquoise', 'darkviolet', 'deeppink', 'deepskyblue',
+    # 'dimgray', 'dimgrey', 'dodgerblue', 'firebrick',
+    # 'floralwhite', 'forestgreen', 'fuchsia', 'gainsboro',
+    # 'ghostwhite', 'gold', 'goldenrod', 'gray', 'grey', 'green',
+    # 'greenyellow', 'honeydew', 'hotpink', 'indianred', 'indigo',
+    # 'ivory', 'khaki', 'lavender', 'lavenderblush', 'lawngreen',
+    # 'lemonchiffon', 'lightblue', 'lightcoral', 'lightcyan',
+    # 'lightgoldenrodyellow', 'lightgray', 'lightgrey',
+    # 'lightgreen', 'lightpink', 'lightsalmon', 'lightseagreen',
+    # 'lightskyblue', 'lightslategray', 'lightslategrey',
+    # 'lightsteelblue', 'lightyellow', 'lime', 'limegreen',
+    # 'linen', 'magenta', 'maroon', 'mediumaquamarine',
+    # 'mediumblue', 'mediumorchid', 'mediumpurple',
+    # 'mediumseagreen', 'mediumslateblue', 'mediumspringgreen',
+    # 'mediumturquoise', 'mediumvioletred', 'midnightblue',
+    # 'mintcream', 'mistyrose', 'moccasin', 'navajowhite', 'navy',
+    # 'oldlace', 'olive', 'olivedrab', 'orange', 'orangered',
+    # 'orchid', 'palegoldenrod', 'palegreen', 'paleturquoise',
+    # 'palevioletred', 'papayawhip', 'peachpuff', 'peru', 'pink',
+    # 'plum', 'powderblue', 'purple', 'red', 'rosybrown',
+    # 'royalblue', 'rebeccapurple', 'saddlebrown', 'salmon',
+    # 'sandybrown', 'seagreen', 'seashell', 'sienna', 'silver',
+    # 'skyblue', 'slateblue', 'slategray', 'slategrey', 'snow',
+    # 'springgreen', 'steelblue', 'tan', 'teal', 'thistle', 'tomato',
+    # 'turquoise', 'violet', 'wheat', 'white', 'whitesmoke',
+    # 'yellow', 'yellowgreen'
+    # ]
 
+    colors = [
+        'blue', 'green', 'orange', 'red',
+        'blue', 'green', 'orange', 'red',
+        'yellow', 'yellow'
+    ]   
+    second_indices = {4, 5, 6, 7, 9}  # Adjusted for 0-based indexing
+    highlight_indices = {8, 9}  # Adjusted for 0-based indexing
     # Plot drone paths for each configuration
     for i, drone_path in enumerate(all_drone_paths):
         drone_path = np.array(drone_path)
         gains = gain_configurations[i]
         label = f"Kp={gains['gain_x'][0]}, Ki={gains['gain_x'][1]}, Kd={gains['gain_x'][2]}"
-        
+        is_second = i in second_indices
+        is_highlighted = i in highlight_indices
+
         fig.add_trace(go.Scatter3d(
             x=drone_path[:, 0],
             y=drone_path[:, 1],
             z=-drone_path[:, 2],
             mode='lines',
             name=label,
-            line=dict(color=colors[i % len(colors)], width=3)
+            line=dict(color=colors[i % len(colors)], width=6 if is_highlighted else 3, dash='dot' if is_second else None)
+            # marker=dict(size=5 if is_highlighted else 0, color='black')  # Add small black markers for highlighted
+
         ))
     
     # Plot waypoints
@@ -309,8 +361,9 @@ def plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurati
     gate_width_y = 5
     gate_height = 5
     
-    # Add gates around waypoints
-    for wp, angle in zip(waypoints, waypoints_angles):
+    all_gate_positions = np.array(all_gate_positions)
+    # Add gates around gates
+    for wp, angle in zip(all_gate_positions, waypoints_angles):
         theta = np.deg2rad(angle)  # Convert angle to radians
         
         # Rotation matrix for Z-axis rotation
@@ -439,17 +492,18 @@ if __name__ == "__main__":
     target_x=6.788
     target_y=81.6774
     target_z =-43.380
-    # with open("experiment_results.json", "r") as infile:
+    # with open("pid_raw_simple.json", "r") as infile:
     #     data = json.load(infile)
 
     # # Assign each field to its respective array
-    # all_gate_positions = data.get("gate_positions", [])
+    # # all_gate_positions = data.get("gate_positions", [])
+    # all_gate_positions = WAYPOINTS
     # all_drone_paths = data.get("drone_paths", [])
     # collision_counts = data.get("collision_counts", [])
     # runtimes = data.get("runtimes", [])
     # gain_configurations = data.get("gain_configurations", [])
 
-    # # Run each configuration
+    # Run each configuration
     for gains in gain_configurations:
         print(f"\nTesting gains: {gains}")
         
@@ -469,34 +523,37 @@ if __name__ == "__main__":
         # Run controller and store results
         gate_positions, collision_count, total_runtime  = state_based_pid_control(pidC)
 
-        data_to_save = {
-            "gate_positions": convert_ndarray_to_list(all_gate_positions),
-            "drone_paths": convert_ndarray_to_list(all_drone_paths),
-            "collision_counts": collision_counts,
-            "runtimes": runtimes,
-            "gain_configurations": gain_configurations  # Save gain configurations as well for easy reference
-        }
 
-        # Write to a JSON file
-        with open("pid_RRT_qual1.json", "w") as outfile:
-            json.dump(data_to_save, outfile, indent=4)
-        print("Data saved to pid_RRT_qual1.json")
 
         # if(collision_count != -1):
         all_gate_positions.append(gate_positions)
         all_drone_paths.append(drone_path.copy())  # Make sure to copy the drone_path
         collision_counts.append(collision_count)
         runtimes.append(total_runtime)
+
         # Land and reset
         client.landAsync().join()
         client.armDisarm(True)
         client.enableApiControl(True)
         time.sleep(3)  # Wait between runs
-    
+
+    data_to_save = {
+        "gate_positions": convert_ndarray_to_list(all_gate_positions),
+        "drone_paths": convert_ndarray_to_list(all_drone_paths),
+        "collision_counts": collision_counts,
+        "runtimes": runtimes,
+        "gain_configurations": gain_configurations  # Save gain configurations as well for easy reference
+    }
+
+    # Write to a JSON file
+    with open("pid_rrt_qual1.json", "w") as outfile:
+        json.dump(data_to_save, outfile, indent=4)
+    print("Data saved to pid_rrt_simple.json")
+
     # Plot combined results
     # plot_combined_gate_errors(all_gate_positions, gain_configurations, WAYPOINTS)
-    # plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurations, WAYPOINTS, WAYPOINTS_ANGLES)
 
+    # plot_combined_3d_paths(all_drone_paths, all_gate_positions, gain_configurations, WAYPOINTS, WAYPOINTS_ANGLES)
     # gain_strings_x = [str(gains['gain_x']) for gains in gain_configurations]
     # gain_strings_y = [str(gains['gain_y']) for gains in gain_configurations]
     # gain_strings_z = [str(gains['gain_z']) for gains in gain_configurations]
@@ -518,12 +575,26 @@ if __name__ == "__main__":
     # fig, axes = plt.subplots(1, 1, figsize=(18, 6))
     
     # # Plot for gain_x vs collision count
-    # axes.scatter(gain_strings_x, collision_counts, label="Collision count vs gain", marker='o')
+    # # axes.scatter(gain_strings_x, collision_counts, label="Collision count vs gain", marker='o')
+    # first_three = range(5)  # Indices for the first 3 points
+    # last_three = range(5, 10)  # Indices for the last 3 points
+
+    # # Plot the first 3 points in one color (e.g., blue)
+    # axes.scatter([gain_strings_x[i] for i in first_three], 
+    #             [collision_counts[i] for i in first_three], 
+    #             label="PID w/o RRT", color='blue', marker='x')
+
+    # # Plot the last 3 points in a different color (e.g., red)
+    # axes.scatter([gain_strings_x[i] for i in last_three], 
+    #             [collision_counts[i] for i in last_three], 
+    #             label="PID w/ RRT", color='red', marker='o')
+
     # axes.set_xlabel('gain')
     # axes.set_ylabel('Collision Count')
     # axes.set_title('Collision Count vs gain')
     # axes.grid(True)
     # axes.tick_params(axis='x', rotation=45)  # Rotate x labels for better readability
+    # axes.legend(title="Point Groups")  # Add a title to the legend
 
     # # Plot for gain_y vs collision count
     # # axes[1].scatter(gain_strings_y, collision_counts, label="Collision count vs gain_y", marker='o')
@@ -548,12 +619,26 @@ if __name__ == "__main__":
     # fig, axes = plt.subplots(1, 1, figsize=(18, 6))
     
     # # Plot for gain_x vs runtime
-    # axes.scatter(gain_strings_x, runtimes, label="Runtime vs gain", marker='o')
+    # # axes.scatter(gain_strings_x, runtimes, label="Runtime vs gain", marker='o')
+    # first_three = [0,1,2,3,8]  # Indices for the first 3 points
+    # last_three = [4,5,6,7,9]  # Indices for the last 3 points
+
+    # # Plot the first 3 points in one color (e.g., blue)
+    # axes.scatter([gain_strings_x[i] for i in first_three], 
+    #             [runtimes[i] for i in first_three], 
+    #             label="PID w/o RRT", color='blue', marker='x')
+
+    # # Plot the last 3 points in a different color (e.g., red)
+    # axes.scatter([gain_strings_x[i] for i in last_three], 
+    #             [runtimes[i] for i in last_three], 
+    #             label="PID w/ RRT", color='red', marker='o')
+
     # axes.set_xlabel('gain')
     # axes.set_ylabel('Total Runtime (seconds)')
     # axes.set_title('Runtime vs gain')
     # axes.grid(True)
     # axes.tick_params(axis='x', rotation=45)  # Rotate x labels for better readability
+    # axes.legend(title="Point Groups")  # Add a title to the legend
 
     # # Plot for gain_y vs runtime
     # # axes[1].scatter(gain_strings_y, runtimes, label="Runtime vs gain_y", marker='o')
@@ -590,16 +675,35 @@ if __name__ == "__main__":
     # fig.suptitle("Runtime vs PID Gain Components")
 
     # # Plot runtime vs gain_x_P
-    # axs[0].scatter(gain_x_P, runtimes, color="b")
+    # # axs[0].scatter(gain_x_P, runtimes, color="b")
+    # axs[0].scatter([gain_x_P[i] for i in first_three], 
+    #             [runtimes[i] for i in first_three], 
+    #             label="PID w/o RRT", color='blue', marker='x')
+
+    # # Plot the last 3 points in a different color (e.g., red)
+    # axs[0].scatter([gain_x_P[i] for i in last_three], 
+    #             [runtimes[i] for i in last_three], 
+    #             label="PID w/ RRT", color='red', marker='o')
+
     # axs[0].set_xlabel("gain_P")
     # axs[0].set_ylabel("Runtime")
     # axs[0].set_title("Runtime vs gain_P")
 
     # # Plot runtime vs gain_x_D
-    # axs[1].scatter(gain_x_D, runtimes, color="g")
+    # # axs[1].scatter(gain_x_D, runtimes, color="g")
+    # axs[1].scatter([gain_x_D[i] for i in first_three], 
+    #             [runtimes[i] for i in first_three], 
+    #             label="PID w/o RRT", color='blue', marker='x')
+
+    # # Plot the last 3 points in a different color (e.g., red)
+    # axs[1].scatter([gain_x_D[i] for i in last_three], 
+    #             [runtimes[i] for i in last_three], 
+    #             label="PID w/ RRT", color='red', marker='o')
+
     # axs[1].set_xlabel("gain_D")
     # axs[1].set_ylabel("Runtime")
     # axs[1].set_title("Runtime vs gain_D")
+    # axes.legend(title="Point Groups")  # Add a title to the legend
 
     # # # Plot runtime vs gain_y_P
     # # axs[1, 0].scatter(gain_y_P, runtimes, color="r")
